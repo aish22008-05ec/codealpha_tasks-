@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Profile</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Glassmorphic Profile Page */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: url('https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=1950&q=80') no-repeat center center fixed;
+      background-size: cover;
+      color: #fff;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(12px);
+      padding: 1rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    .logo {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 1px 1px 2px #00000066;
+    }
+
+    .nav-right button {
+      background: rgba(255,255,255,0.8);
+      color: #333;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 30px;
+      margin-left: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .nav-right button:hover {
+      background: #fff;
+      color: #ff5c57;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+      gap: 2rem;
+    }
+
+    .profile-card {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(15px);
+      padding: 20px;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 500px;
+      text-align: center;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+    }
+
+    .profile-card img {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #fff;
+      margin-bottom: 10px;
+    }
+
+    .profile-card input, .profile-card textarea, .profile-card button {
+      width: 100%;
+      margin: 8px 0;
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      font-size: 1rem;
+    }
+
+    .profile-card button {
+      background: #ff5c57;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .profile-card button:hover {
+      background: #e9433c;
+    }
+
+    .feed {
+      width: 100%;
+      max-width: 700px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    }
+
+    .card img {
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+
+    .card-actions button {
+      background: transparent;
+      border: none;
+      font-size: 1rem;
+      margin-right: 10px;
+      color: #ffdddd;
+      cursor: pointer;
+    }
+
+    .comments p {
+      font-size: 0.9rem;
+      color: #eee;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.85rem;
+      color: #eee;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="logo">Vibely ✦</div>
+    <div class="nav-right">
+      <button onclick="window.location.href='index.html'">🏠 Home</button>
+      <button onclick="logout()">🚪 Logout</button>
+    </div>
+  </nav>
+
+  <div class="container">
+
+    <!-- Profile Card -->
+    <div class="profile-card">
+      <img id="profilePic" src="abc.jpg" alt="Profile Pic" onerror="this.src='abc.jpg'">
+      <form id="picForm" enctype="multipart/form-data">
+        <input type="file" name="profilePic" accept="image/*" required>
+        <button type="submit">Update Photo</button>
+      </form>
+
+      <h2 id="profileName">@loading</h2>
+      <p id="profileEmail">email@example.com</p>
+
+      <form id="editForm">
+        <input type="text" id="editUsername" placeholder="Edit Username">
+        <input type="email" id="editEmail" placeholder="Edit Email">
+        <textarea id="editBio" rows="3" placeholder="Write your bio..."></textarea>
+        <button type="submit">Save Profile</button>
+      </form>
+    </div>
+
+    <!-- Your Posts -->
+    <div id="my-posts" class="feed"></div>
+
+  </div>
+
+  <footer>© 2025 Vibely • Built with ❤️ by You</footer>
+
+  <script>
+    const userId = localStorage.getItem("userId");
+
+    async function loadProfile() {
+      if (!userId) return window.location.href = 'login.html';
+
+      const u = await fetch(`http://localhost:5000/api/users/${userId}`).then(r => r.json());
+
+      document.getElementById("profilePic").src = u.profilePic || "abc.jpg";
+      document.getElementById("profileName").textContent = '@' + u.username;
+      document.getElementById("profileEmail").textContent = u.email;
+      document.getElementById("editUsername").value = u.username;
+      document.getElementById("editEmail").value = u.email;
+      document.getElementById("editBio").value = u.bio || "";
+    }
+
+    async function loadPosts() {
+      const all = await fetch("http://localhost:5000/api/posts/all").then(r => r.json());
+      const mine = all.filter(p => p.userId._id === userId);
+      const container = document.getElementById("my-posts");
+      container.innerHTML = "";
+      mine.forEach(post => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML = `
+          <img src="${post.imageUrl}" />
+          <h3>${post.caption}</h3>
+          <div class="card-actions">
+            <button onclick="likePost('${post._id}')">❤️ ${post.likes.length}</button>
+            <button disabled>💬 ${post.comments.length}</button>
+          </div>
+          <div class="comments">
+            ${post.comments.map(c => `<p><strong>@${c.userId?.username || 'user'}</strong> ${c.text}</p>`).join("")}
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    document.getElementById("picForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const res = await fetch(`http://localhost:5000/api/users/profile-pic/${userId}`, {
+        method: "PUT",
+        body: formData
+      });
+      const result = await res.json();
+      alert(result.message || "Photo updated");
+      loadProfile();
+    });
+
+    document.getElementById("editForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const data = {
+        username: document.getElementById("editUsername").value,
+        email: document.getElementById("editEmail").value,
+        bio: document.getElementById("editBio").value
+      };
+      const res = await fetch(`http://localhost:5000/api/users/update/${userId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      alert(result.message || "Profile updated");
+      loadProfile();
+    });
+
+    function logout() {
+      localStorage.removeItem("userId");
+      window.location.href = "login.html";
+    }
+
+    loadProfile();
+    loadPosts();
+  </script>
+
+</body>
+</html>
